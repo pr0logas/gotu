@@ -6,6 +6,7 @@
 #:: Usage: ./gotu.sh appname [OR] bash gotu.sh appname
 
 [[ ! -z "$1" ]] && APP=$1 || APP='ssh'
+APP_LAST_STATE_IN_MS=200
 CACHE=~/.cache/gotu
 SS_OUT_FILE="${CACHE}/.ss"
 WHOIS_PATH="${CACHE}/.gotulivewhois"
@@ -55,18 +56,21 @@ function main() {
 				last_recv=$(sed -n ${counter}p $LAST_RECV_PATH)
 				last_sent=$(sed -n ${counter}p $LAST_SENT_PATH)
 
-				if [ $last_recv -le 200 ] || [ $last_recv -le 200 ]; then
+				if [[ ! -z "$last_recv" ]] || [[ ! -z "$last_recv" ]]; then
 
-					if [[ -f "${CACHE}/${ip_without_port}" ]]; then
-						ip_origin=$(cat ${CACHE}/${ip_without_port}  | head -1) 
-						ip_country=$(cat ${CACHE}/${ip_without_port} | tail -1)
-						print_results $ip_country $IP_PORT $ip_origin
-					else
-						whois $ip_without_port > $WHOIS_PATH
-						ip_origin=$(cat $WHOIS_PATH  | grep -i "netname" | head -1 | sed 's@NetName:@@gi' | tr -d '[:space:]')
-						ip_country=$(cat $WHOIS_PATH | grep -i "country" | head -1 | sed 's@country:@@gi' | tr -d '[:space:]')
-						add_ip_info_to_cache $ip_without_port $ip_country  $ip_origin 
-						print_results $ip_country $IP_PORT $ip_origin
+					if [ $last_recv -le $APP_LAST_STATE_IN_MS ] || [ $last_sent -le $APP_LAST_STATE_IN_MS ]; then
+
+						if [[ -f "${CACHE}/${ip_without_port}" ]]; then
+							ip_origin=$(cat ${CACHE}/${ip_without_port}  | head -1) 
+							ip_country=$(cat ${CACHE}/${ip_without_port} | tail -1)
+							print_results $ip_country $IP_PORT $ip_origin
+						else
+							whois $ip_without_port > $WHOIS_PATH
+							ip_origin=$(cat $WHOIS_PATH  | grep -i "netname" | head -1 | sed 's@NetName:@@gi' | tr -d '[:space:]')
+							ip_country=$(cat $WHOIS_PATH | grep -i "country" | head -1 | sed 's@country:@@gi' | tr -d '[:space:]')
+							add_ip_info_to_cache $ip_without_port $ip_country  $ip_origin 
+							print_results $ip_country $IP_PORT $ip_origin
+						fi
 					fi
 				fi
 			fi
